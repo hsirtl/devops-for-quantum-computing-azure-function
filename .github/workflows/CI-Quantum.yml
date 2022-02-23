@@ -1,0 +1,48 @@
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/QApp.QSharp/**'
+      - 'src/QApp.QSharp.Tests/**'
+      - '**/CI-Quantum.yml'
+
+name: CI Quantum
+env:
+  AZURE_QUANTUM_PACKAGE_PATH: './src/QApp.Qsharp'
+  AZURE_QUANTUM_UNIT_TEST_PACKAGE_PATH: './src/QApp.Qsharp.Tests'
+  AZURE_QUANTUM_ESTIMATION_PACKAGE_PATH: './src/QApp.Qsharp.Estimations'
+  DOTNET_VERSION: '3.1.x'
+jobs:
+  build-and-test-quantum:
+    name: Build and test quantum component
+    runs-on: ubuntu-latest
+    steps:
+
+      # Checkout code
+    - name: 'Checkout code'
+      uses: actions/checkout@main
+
+      # Build the Quantum Component
+    - name: 'Build the Quantum Component'
+      shell: pwsh
+      run: |
+        pushd '${{ env.AZURE_QUANTUM_PACKAGE_PATH }}'
+        dotnet restore
+        dotnet build --configuration Release --output ./output
+        popd
+        
+      # Test the Quantum Component
+    - name: 'Unit Test the Quantum Component'
+      shell: pwsh
+      run: |
+        pushd '${{ env.AZURE_QUANTUM_UNIT_TEST_PACKAGE_PATH }}'
+        dotnet test --verbosity normal
+        popd
+
+      # Estimate Quantum Resources
+    - name: 'Estimate Quantum Resources'
+      shell: pwsh
+      run: |
+        pushd '${{ env.AZURE_QUANTUM_ESTIMATION_PACKAGE_PATH }}'
+        dotnet test --verbosity normal
+        popd

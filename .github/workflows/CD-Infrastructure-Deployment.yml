@@ -1,0 +1,53 @@
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'env/**'
+      - '**/CD-Infrastructure-Deployment.yml'
+
+name: CD Infrastructure Deployment
+env:
+  AZURE_RESOURCE_GROUP_NAME: devops-qc-func-rg
+  AZURE_RESOURCE_GROUP_LOCATION: eastus
+  APP_NAME: devopsqcfunc
+jobs:
+  deploy-arm-template:
+    name: Deploy ARM Template
+    runs-on: ubuntu-latest
+    steps:
+
+      # Checkout code
+    - name: Checkout code
+      uses: actions/checkout@main
+
+      # Log into Azure
+    - name: Log into Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Create the resource group (ignore if exists)
+    - name: Create the resource group (ignore if exists)
+      uses: Azure/CLI@v1
+      with:
+        inlineScript: |
+          #!/bin/bash
+          az group create --name ${{ env.AZURE_RESOURCE_GROUP_NAME }} --location ${{ env.AZURE_RESOURCE_GROUP_LOCATION }}
+
+      # Deploy basic infrastructure (ARM deploy)
+    - name: Deploy basic infrastructure (ARM deploy)
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+        resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+        template: ./env/azuredeploy.json
+        parameters: appName=${{ env.APP_NAME }} location=${{ env.AZURE_RESOURCE_GROUP_LOCATION }}
+
+      # Configure RBAC on infrastructure resources
+    - name: Configure RBAC on infrastructure resources
+      uses: azure/arm-deploy@v1
+      with:
+        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+        resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP_NAME }}
+        template: ./env/azuredeploy.rbac.json
+        parameters: appName=${{ env.APP_NAME }} location=${{ env.AZURE_RESOURCE_GROUP_LOCATION }}

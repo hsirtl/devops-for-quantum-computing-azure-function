@@ -1,0 +1,45 @@
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/**'
+      - '**/CD-App-Deployment.yml'
+
+name: CD App Deployment
+env:
+  AZURE_RESOURCE_GROUP_NAME: devops-qc-func-rg
+  AZURE_RESOURCE_GROUP_LOCATION: eastus
+  AZURE_FUNCTIONAPP_NAME: devopsqcfunc
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/Function.Csharp'
+  DOTNET_VERSION: '3.1.x'
+jobs:
+  deploy-arm-template:
+    name: Deploy Function App
+    runs-on: ubuntu-latest
+    steps:
+
+      # Checkout code
+    - name: 'Checkout code'
+      uses: actions/checkout@main
+
+      # Log into Azure
+    - name: 'Log into Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Build the Function App
+    - name: 'Build the Function App'
+      shell: pwsh
+      run: |
+        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        dotnet build --configuration Release --output ./output
+        popd
+        
+      # Deploy the Functions App
+    - name: 'Deploy Azure Functions'
+      uses: Azure/functions-action@v1
+      id: fa
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
