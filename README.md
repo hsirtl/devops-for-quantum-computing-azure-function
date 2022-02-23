@@ -1,5 +1,5 @@
 # DevOps for Quantum Computing
-This repo contains everything you need to show how DevOps works for hybrid quantum applications.
+This repo contains everything you need to show how DevOps could work for hybrid quantum applications.
 
 ![Architecture](doc/media/architecture.png)
 
@@ -7,7 +7,7 @@ This repo contains everything you need to show how DevOps works for hybrid quant
 
 ### Create a fork of this repository
 
-In the top-right cornder of this page, click **Fork**. Select an organization where you'd like to fork this repo to. Continue to work from there for the following steps.
+In the top-right corner of this page, click **Fork**. Select an organization where you'd like to fork this repo to. Continue to work from there for the following steps.
 
 For a more detailed description about how to create Forks, have a look at the [Fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo) documentation on [https://docs.github.com](https://docs.github.com).
 
