@@ -11,6 +11,8 @@ In the top-right corner of this page, click **Fork**. Select an organization whe
 
 For a more detailed description about how to create Forks, have a look at the [Fork a repo](https://docs.github.com/en/get-started/quickstart/fork-a-repo) documentation on [https://docs.github.com](https://docs.github.com).
 
+Make sure that GitHub Actions are enabled in your repository. For more information about how to enable GitHub Actions, see [Managing GitHub Actions settings for a repository](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository).
+
 ### Create Azure Credentials
 
 Follow instructions on [Deploy ARM templates by using GitHub Actions](https://docs.microsoft.com/azure/azure-resource-manager/templates/deploy-github-actions) for creating deployment credentials for GitHub. This includes creating a service principal and assigning **Contributor**-role to him.
