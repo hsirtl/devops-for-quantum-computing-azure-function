@@ -1,0 +1,168 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "appName": {
+            "type": "string"
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "eastus",
+            "allowedValues" : [
+                "eastus",
+                "japaneast",
+                "japanwest",
+                "northeurope",
+                "uksouth",
+                "ukwest",
+                "westcentralus",
+                "westeurope",
+                "westus",
+                "westus2"
+            ]
+        }
+    },
+    "variables": {
+        "functionAppName": "[parameters('appName')]",
+        "hostingPlanName": "[concat(parameters('appName'),'-hp')]",
+        "workspaceName": "[concat(parameters('appName'),'-qws')]",
+        "storageAccountName": "[format('{0}{1}', parameters('appName'), substring(uniqueString(resourceGroup().id), 0, 5))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-06-01",
+            "name": "[variables('storageAccountName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2"
+        },
+        {
+            "type": "Microsoft.Quantum/Workspaces",
+            "apiVersion": "2019-11-04-preview",
+            "name": "[variables('workspaceName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "providers": [
+                    {
+                        "providerId": "Microsoft",
+                        "providerSku": "DZH3178M639F",
+                        "applicationName": "[concat(variables('workspaceName'), '-Microsoft')]"
+                    },
+                    {
+                        "providerId": "honeywell",
+                        "providerSku": "credits1",
+                        "applicationName": "[concat(variables('workspaceName'), '-honeywell')]"
+                    },
+                    {
+                        "providerId": "ionq",
+                        "providerSku": "pay-as-you-go-cred",
+                        "applicationName": "[concat(variables('workspaceName'), '-ionq')]"
+                    }
+                ],
+                "storageAccount": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            }
+        },
+        {
+            "name": "[variables('functionAppName')]",
+            "type": "microsoft.insights/components",
+            "location": "[parameters('location')]",
+            "apiVersion": "2014-04-01",
+            "properties": {
+                "ApplicationId": "[variables('functionAppName')]",
+                "Application_Type": "web",
+                "Flow_Type": "Redfield"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('hostingPlanName')]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic"
+            },
+            "properties": {
+                "name": "[variables('hostingPlanName')]",
+                "computeMode": "Dynamic"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2021-02-01",
+            "name": "[variables('functionAppName')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Quantum/Workspaces', variables('workspaceName'))]",
+                "[resourceId('Microsoft.Insights/Components/', variables('functionAppName'))]"
+            ],
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "siteConfig": {
+                    "numberOfWorkers": 1,
+                    "use32BitWorkerProcess": false,
+                    "appSettings": [
+                        {
+                        "name": "FUNCTIONS_EXTENSION_VERSION",
+                        "value": "~3"
+                        },
+                        {
+                        "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                        "value": "~10"
+                        },
+                        {
+                        "name": "FUNCTIONS_WORKER_RUNTIME",
+                        "value": "dotnet"
+                        },
+                        {
+                        "name": "AzureWebJobsStorage",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                        "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                        "value": "[reference(concat('microsoft.insights/components/', variables('functionAppName'))).InstrumentationKey]"
+                        },
+                        {
+                        "name": "StorageConnection",
+                        "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                        "name": "SubscriptionId",
+                        "value": "[subscription().subscriptionId]"
+                        },
+                        {
+                        "name": "ResourceGroup",
+                        "value": "[resourceGroup().name]"
+                        },
+                        {
+                        "name": "WorkspaceName",
+                        "value": "[variables('workspaceName')]"
+                        },
+                        {
+                        "name": "WorkspaceLocation",
+                        "value": "[parameters('location')]"
+                        }
+
+                    ]
+                },
+                "reserved": true
+            }
+        }
+    ]
+}
